@@ -261,7 +261,7 @@ resource "null_resource" "hostname_update_1" {
       "sudo hostnamectl set-hostname ${aws_instance.aap_instance_1.public_dns}",
 
       # Download and extract the setup file
-      "wget https://github.com/r3dact3d/Trial-Project/raw/refs/heads/ansible/post_data/ansible-automation-platform-containerized-setup-2.5-6.tar.gz",
+      "wget https://github.com/r3dact3d/AAP-2.5-Containerized-on-AWS/raw/refs/heads/ansible/post_data/ansible-automation-platform-containerized-setup-2.5-6.tar.gz",
       "sleep 30",
       "tar xfvz ansible-automation-platform-containerized-setup-2.5-6.tar.gz",
       "sleep 45",
