@@ -1,0 +1,23 @@
+# Terraform Infrastructure
+
+## Summary
+
+This project leverages Terraform to provision infrastructure and integrates GitHub Actions for streamlined automation. Key features include:
+
+- A publicly accessible RHEL 9 EC2 instance running on AWS.
+- AWS infrastructure and instance configuration automated with Terraform.
+- GitHub Actions workflows for:
+  - Automatically creating a Terraform plan on a pull request.
+  - Applying infrastructure changes upon pull request merge.
+
+> **Note:** Familiarize yourself with all resources in the `terraform` directory, particularly `main.tf`.
+
+---
+
+### Architecture Diagram
+
+![WIP](images/simple.png)
+
+   > **Note:**  
+   - The ec2 details are out of date, see `terraform` code in `main.tf`.  
+---
