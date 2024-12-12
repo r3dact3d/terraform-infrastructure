@@ -1,4 +1,7 @@
 name: "Terraform Infrastructure Change Management Pipeline with GitHub Actions"
+permissions:
+  contents: write
+  pull-requests: write
 
 on: 
   push: 
@@ -29,9 +32,7 @@ jobs:
 
     steps:
       - name: Checkout the repository to the runner
-        uses: actions/checkout@v3
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+        uses: actions/checkout@v4
 
       - name: Setup Terraform with specified version on the runner
         uses: hashicorp/setup-terraform@v2
