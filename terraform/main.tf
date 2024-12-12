@@ -72,20 +72,37 @@ resource "aws_route_table" "aap_pub_igw" {
   }
 }
 
-resource "aws_subnet" "aap_subnet" {
+resource "aws_subnet" "aap_subnet_1" {
   availability_zone       = "us-east-2a"
   cidr_block              = "10.1.0.0/24"
   map_public_ip_on_launch = "true"
   vpc_id                  = aws_vpc.aap_vpc.id
 
   tags = {
-    Name      = "AAP-Subnet"
+    Name      = "AAP-Subnet_1"
     Terraform = "true"
   }
 }
 
-resource "aws_route_table_association" "aap_rt_subnet_public" {
-  subnet_id      = aws_subnet.aap_subnet.id
+resource "aws_subnet" "aap_subnet_2" {
+  availability_zone       = "us-east-2b"
+  cidr_block              = "10.1.1.0/24"
+  map_public_ip_on_launch = true
+  vpc_id                  = aws_vpc.aap_vpc.id
+
+  tags = {
+    Name      = "AAP-Subnet-2"
+    Terraform = "true"
+  }
+}
+
+resource "aws_route_table_association" "aap_rt_subnet_public_1" {
+  subnet_id      = aws_subnet.aap_subnet_1.id
+  route_table_id = aws_route_table.aap_pub_igw.id
+}
+
+resource "aws_route_table_association" "aap_rt_subnet_public_2" {
+  subnet_id      = aws_subnet.aap_subnet_2.id
   route_table_id = aws_route_table.aap_pub_igw.id
 }
 
@@ -186,15 +203,15 @@ data "aws_ami" "rhel" {
   owners = ["309956199498"]
 }
 
-resource "aws_instance" "aap_instance" {
+resource "aws_instance" "aap_instance_1" {
   instance_type               = "t2.xlarge"
   vpc_security_group_ids      = [aws_security_group.aap_security_group.id]
   associate_public_ip_address = true
-  key_name        = aws_key_pair.cloud_key.key_name
+  key_name                    = aws_key_pair.cloud_key.key_name
   user_data                   = file("user_data.txt")
   ami                         = data.aws_ami.rhel.id
   availability_zone           = "us-east-2a"
-  subnet_id                   = aws_subnet.aap_subnet.id
+  subnet_id                   = aws_subnet.aap_subnet_1.id
 
 # Specify the root block device to adjust volume size
   root_block_device {
@@ -209,8 +226,30 @@ resource "aws_instance" "aap_instance" {
   }
 }
 
-resource "null_resource" "hostname_update" {
-  depends_on = [aws_instance.aap_instance]
+resource "aws_instance" "aap_instance_2" {
+  instance_type               = "t2.xlarge"
+  vpc_security_group_ids      = [aws_security_group.aap_security_group.id]
+  associate_public_ip_address = true
+  key_name                    = aws_key_pair.cloud_key.key_name
+  user_data                   = file("user_data.txt")
+  ami                         = data.aws_ami.rhel.id
+  availability_zone           = "us-east-2b"
+  subnet_id                   = aws_subnet.aap_subnet_2.id
+
+  root_block_device {
+    volume_size           = 100
+    volume_type           = "gp3"
+    delete_on_termination = true
+  }
+
+  tags = {
+    Name      = "aap-controller-2"
+    Terraform = "true"
+  }
+}
+
+resource "null_resource" "hostname_update_1" {
+  depends_on = [aws_instance._1]
 
   provisioner "remote-exec" {
     inline = [
@@ -219,38 +258,49 @@ resource "null_resource" "hostname_update" {
       
       # Ensure stuff is installed
       "sudo dnf install -y ansible-core wget git-core rsync vim",
-
-      # Set hostname
-      "sudo hostnamectl set-hostname ${aws_instance.aap_instance.public_dns}",
+      "sudo hostnamectl set-hostname ${aws_instance.aap_instance_1.public_dns}",
 
       # Download and extract the setup file
       "wget https://github.com/r3dact3d/Trial-Project/raw/refs/heads/ansible/post_data/ansible-automation-platform-containerized-setup-2.5-6.tar.gz",
-      "file ansible-automation-platform-containerized-setup-2.5-6.tar.gz",
+      "sleep 30",
       "tar xfvz ansible-automation-platform-containerized-setup-2.5-6.tar.gz",
       "sleep 45",
-
-      # Configure and run the playbook
-      "cd ansible-automation-platform-containerized-setup-2.5-6",
-      "sed -i 's/<set your own>/new-install-password/g' inventory-growth",
-      "sed -i 's/aap.example.org/${aws_instance.aap_instance.public_dns}/g' inventory-growth",
-      "sed -i 's/<your RHN username>/rhn_user/g' inventory-growth",
-      "sed -i 's/<your RHN password>/rhn_pass/g' inventory-growth",
-      #"nohup ansible-playbook -i inventory-growth ansible.containerized_installer.install -e ansible_connection=local & 2>/dev/null",
     ]
-    
     
     connection {
       type        = "ssh"
-      host        = aws_instance.aap_instance.public_ip
+      host        = aws_instance.aap_instance_1.public_ip
       user        = "ec2-user"
       private_key = tls_private_key.cloud_key.private_key_pem
     }
   }
 }
 
-# Add created ec2 instance to ansible inventory
-resource "ansible_host" "aap_instance" {
-  name   = aws_instance.aap_instance.public_dns
+resource "null_resource" "hostname_update_2" {
+  depends_on = [aws_instance._1]
+
+  provisioner "remote-exec" {
+    inline = [
+      # Register Red Hat Host
+      "sudo rhc connect --activation-key=<activation_key_name> --organization=<organization_ID>",
+      
+      # Ensure stuff is installed
+      "sudo dnf install -y ansible-core wget git-core rsync vim",
+      "sudo hostnamectl set-hostname ${aws_instance.aap_instance_2.public_dns}",
+    ]
+    
+    connection {
+      type        = "ssh"
+      host        = aws_instance.aap_instance_2.public_ip
+      user        = "ec2-user"
+      private_key = tls_private_key.cloud_key.private_key_pem
+    }
+  }
+}
+
+# Add created ec2 instances to ansible inventory
+resource "ansible_host" "aap_instance_1" {
+  name   = aws_instance.aap_instance_1.public_dns
   groups = ["gateway"]
   variables = {
     ansible_user                 = "ec2-user",
@@ -258,5 +308,13 @@ resource "ansible_host" "aap_instance" {
     ansible_python_interpreter   = "/usr/bin/python3",
   }
 }
-
+resource "ansible_host" "aap_instance_2" {
+  name   = aws_instance.aap_instance_2.public_dns
+  groups = ["gateway"]
+  variables = {
+    ansible_user                 = "ec2-user",
+    ansible_ssh_private_key_file = "~/.ssh/id_rsa",
+    ansible_python_interpreter   = "/usr/bin/python3",
+  }
+}
 
