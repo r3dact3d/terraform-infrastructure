@@ -249,7 +249,7 @@ resource "aws_instance" "aap_instance_2" {
 }
 
 resource "null_resource" "hostname_update_1" {
-  depends_on = [aws_instance._1]
+  depends_on = [aws_instance.aap_instance_1]
 
   provisioner "remote-exec" {
     inline = [
@@ -277,7 +277,7 @@ resource "null_resource" "hostname_update_1" {
 }
 
 resource "null_resource" "hostname_update_2" {
-  depends_on = [aws_instance._1]
+  depends_on = [aws_instance.aap_instance_2]
 
   provisioner "remote-exec" {
     inline = [
