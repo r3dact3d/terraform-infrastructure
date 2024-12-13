@@ -221,7 +221,7 @@ resource "aws_instance" "aap_instance_1" {
   }
   
   tags = {
-    Name      = "aap-controller"
+    Name      = "aap-controller-1"
     Terraform = "true"
   }
 }
