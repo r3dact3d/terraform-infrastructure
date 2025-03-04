@@ -221,7 +221,7 @@ resource "aws_instance" "aap_instance_1" {
   }
   
   tags = {
-    Name      = "aap-controller"
+    Name      = "aap-controller-1"
     Terraform = "true"
   }
 }
@@ -248,55 +248,6 @@ resource "aws_instance" "aap_instance_2" {
   }
 }
 
-resource "null_resource" "hostname_update_1" {
-  depends_on = [aws_instance.aap_instance_1]
-
-  provisioner "remote-exec" {
-    inline = [
-      # Register Red Hat Host
-      "sudo rhc connect --activation-key=<activation_key_name> --organization=<organization_ID>",
-      
-      # Ensure stuff is installed
-      "sudo dnf install -y ansible-core wget git-core rsync vim",
-      "sudo hostnamectl set-hostname ${aws_instance.aap_instance_1.public_dns}",
-
-      # Download and extract the setup file
-      "wget https://github.com/r3dact3d/AAP-2.5-Containerized-on-AWS/raw/refs/heads/ansible/post_data/ansible-automation-platform-containerized-setup-2.5-6.tar.gz",
-      "sleep 30",
-      "tar xfvz ansible-automation-platform-containerized-setup-2.5-6.tar.gz",
-      "sleep 45",
-    ]
-    
-    connection {
-      type        = "ssh"
-      host        = aws_instance.aap_instance_1.public_ip
-      user        = "ec2-user"
-      private_key = tls_private_key.cloud_key.private_key_pem
-    }
-  }
-}
-
-resource "null_resource" "hostname_update_2" {
-  depends_on = [aws_instance.aap_instance_2]
-
-  provisioner "remote-exec" {
-    inline = [
-      # Register Red Hat Host
-      "sudo rhc connect --activation-key=<activation_key_name> --organization=<organization_ID>",
-      
-      # Ensure stuff is installed
-      "sudo dnf install -y ansible-core wget git-core rsync vim",
-      "sudo hostnamectl set-hostname ${aws_instance.aap_instance_2.public_dns}",
-    ]
-    
-    connection {
-      type        = "ssh"
-      host        = aws_instance.aap_instance_2.public_ip
-      user        = "ec2-user"
-      private_key = tls_private_key.cloud_key.private_key_pem
-    }
-  }
-}
 
 # Add created ec2 instances to ansible inventory
 resource "ansible_host" "aap_instance_1" {
