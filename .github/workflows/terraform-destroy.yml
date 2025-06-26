@@ -7,6 +7,8 @@ env:
   TF_LOG: INFO
   AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY }}
   AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+  S3_BUCKET_NAME: tfstate-bucket-blinker19
+  AWS_REGION: us-east-2
 
 jobs:
   destroy:
@@ -22,6 +24,11 @@ jobs:
       - name: Checkout the repository to the runner
         uses: actions/checkout@v2
 
+      - name: Configure user_data and/or remote_exec provisioner
+        run: |
+          perl -pi -e 's/<S3_BUCKET_NAME>/${{ env.S3_BUCKET_NAME }}/g' main.tf
+          perl -pi -e 's/<AWS_REGION>/${{ env.AWS_REGION }}/g' main.tf
+
       - name: Setup Terraform with specified version on the runner
         uses: hashicorp/setup-terraform@v2
         with:
@@ -33,3 +40,11 @@ jobs:
 
       - name: Destroy Infrastructure
         run: terraform destroy -auto-approve
+
+      - name: Empty S3 bucket
+        run: |
+          aws --region ${{ env.AWS_REGION }} s3 rm s3://${{ env.S3_BUCKET_NAME }} --recursive
+
+      - name: Delete S3 bucket
+        run: |
+          aws s3api delete-bucket --bucket ${{ env.S3_BUCKET_NAME }} --region ${{ env.AWS_REGION }}
