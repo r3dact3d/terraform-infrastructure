@@ -135,7 +135,7 @@ data "aws_ami" "fedora" {
   most_recent = true
   filter {
     name   = "name"
-    values = ["Fedora-Cloud-Base-AmazonEC2.aarch64-42-1.1"]
+    values = ["Fedora-Cloud-Base-AmazonEC2.x86_64-42-1.1"]
   }
   filter {
     name   = "virtualization-type"
