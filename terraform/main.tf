@@ -135,7 +135,7 @@ data "aws_ami" "fedora" {
   most_recent = true
   filter {
     name   = "name"
-    values = ["fedora-coreos-42.2025*"]
+    values = ["Fedora-Cloud-Base-AmazonEC2.aarch64-42-1.1"]
   }
   filter {
     name   = "virtualization-type"
@@ -172,7 +172,7 @@ resource "ansible_host" "exposed_instance" {
   name   = aws_instance.exposed_instance.public_dns
   groups = ["webserver"]
   variables = {
-    ansible_user                 = "ec2-user",
+    ansible_user                 = "fedora",
     ansible_ssh_private_key_file = "~/.ssh/id_rsa",
     ansible_python_interpreter   = "/usr/bin/python3",
   }
