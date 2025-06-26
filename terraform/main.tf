@@ -16,14 +16,14 @@ terraform {
 
 terraform {
   backend "s3" {
-    bucket = "S3_BUCKET_NAME"
+    bucket = "<S3_BUCKET_NAME>"
     key    = "terraform.tfstate"
-    region = "AWS_REGION"
+    region = "<AWS_REGION>"
   }
 }
 
 provider "aws" {
-  region = "AWS_REGION"
+  region = "<AWS_REGION>"
 }
 
 # Add key for ssh connection
@@ -67,7 +67,7 @@ resource "aws_route_table" "exposed_pub_igw" {
 }
 
 resource "aws_subnet" "exposed_subnet" {
-  availability_zone       = "AWS_REGIONa"
+  availability_zone       = "<AWS_REGION>a"
   cidr_block              = "10.1.0.0/24"
   map_public_ip_on_launch = "true"
   vpc_id                  = aws_vpc.exposed_vpc.id
@@ -151,7 +151,7 @@ resource "aws_instance" "exposed_instance" {
   key_name        = aws_key_pair.my_key.key_name
   user_data                   = file("user_data.txt")
   ami                         = data.aws_ami.fedora.id
-  availability_zone           = "AWS_REGIONa"
+  availability_zone           = "<AWS_REGION>a"
   subnet_id                   = aws_subnet.exposed_subnet.id
 
 # Specify the root block device to adjust volume size
